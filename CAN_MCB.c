@@ -13,8 +13,7 @@ static QueueHandle_t spp_uart_queue;
 static const char *TAG = "CAN_MCB";
 
 static void sendMotorData(int16_t motR,int16_t motL,uint8_t enable) {
-    uint16_t calcChecksum = (START_CODE_HEADER)^(motL)^(motR);
-    // uint16_t calcChecksum = (START_CODE_HEADER)^(ID_MOTOR_MODULE)^(cont)^(motL)^(enable)^(0x00);
+    uint16_t calcChecksum = START_CODE_HEADER^motL^motR^enable;
     tx_motor_control_board_t command = {
         .start = START_CODE_HEADER,
         .speedL = motL,
@@ -22,7 +21,6 @@ static void sendMotorData(int16_t motR,int16_t motL,uint8_t enable) {
         .enable = enable,
         .checksum = calcChecksum
     };
-
     uart_write_bytes(mcbConfigInit.numUart,&command, sizeof(command));
 }
 
@@ -35,7 +33,7 @@ static void processMCBData(uint8_t *data) {
     if (newMcbData.start == START_CODE_HEADER) {
 
         newChecksum = (uint16_t)(newMcbData.start ^ newMcbData.cmd1 ^ newMcbData.cmd2 ^ newMcbData.speedR_meas ^ newMcbData.speedL_meas 
-                                       ^ newMcbData.batVoltage ^ newMcbData.boardTemp ^ newMcbData.cmdLed);
+                                       ^ newMcbData.batVoltage ^ newMcbData.boardTemp ^ newMcbData.cmdLed ^ newMcbData.isCharging ^ newMcbData.currentR ^ newMcbData.currentL);
         if( newChecksum == newMcbData.checksum){
             // printf("Nuevo paquete OK -> voltage: %d\tposL: %ld\tposR:%ld\n",newMcbData.batVoltage,newMcbData.posL,newMcbData.posR);
             xQueueSend(newMcbQueueHandler,&newMcbData,0);

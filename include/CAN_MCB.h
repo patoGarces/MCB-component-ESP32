@@ -36,9 +36,12 @@ typedef struct {
     int16_t   speedL_meas;
     int32_t   posR;
     int32_t   posL;
+    int16_t   currentR;
+    int16_t   currentL;
     int16_t   batVoltage;
     int16_t   boardTemp;
     uint16_t  cmdLed;
+    uint8_t   isCharging;
     uint16_t  checksum;
 
     // uint8_t     ordenCode;
