@@ -170,7 +170,7 @@ static void controlHandler(void *pvParameters) {
                 break;
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(5));
     }
 }
 
@@ -199,6 +199,6 @@ void mcbInit(config_init_mcb_t *config) {
     //Reset the pattern queue length to record at most 20 pattern positions.
     uart_pattern_queue_reset(config->numUart, PATTERN_QUEUE_SIZE);
 
-    xTaskCreatePinnedToCore(controlHandler,"MCB handler task",4096,NULL,10,NULL,config->core);      // TODO: pasar queue
+    xTaskCreatePinnedToCore(controlHandler, "MCB handler task", 4096, NULL, configMAX_PRIORITIES - 2, NULL, config->core);      // TODO: pasar queue
     ESP_LOGI(TAG,"initialized");
 }
