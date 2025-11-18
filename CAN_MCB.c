@@ -35,8 +35,8 @@ static void sendMotorData(int16_t motR,int16_t motL,uint8_t enable) {
     #ifdef HARDWARE_SPLITBOARD
         tx_motor_control_board_t command = {
             .start = '/',//START_CODE_HEADER,
-            .speedL = motL,
-            .speedR = motR,
+            .speedTargetL = motL,
+            .speedTargetR = motR,
             .unusedStateMaster = 0,
             .unusedStateSlave = 0,
             .checksum = CalcCRC((uint8_t*)&command,sizeof(command)-2)
@@ -44,8 +44,8 @@ static void sendMotorData(int16_t motR,int16_t motL,uint8_t enable) {
     #else
         tx_motor_control_board_t command = {
             .start = START_CODE_HEADER,
-            .speedL = motL,
-            .speedR = motR,
+            .speedTargetL = motL,
+            .speedTargetR = motR,
             .enable = enable,
             .checksum = START_CODE_HEADER^motL^motR^enable
         };

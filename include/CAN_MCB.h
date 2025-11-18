@@ -38,8 +38,8 @@ typedef enum {
 
     typedef struct __attribute__((packed)) {
         uint8_t start;
-        int16_t  speedR;
-        int16_t  speedL;
+        int16_t  speedTargetR;
+        int16_t  speedTargetL;
         uint8_t  unusedStateMaster;
         uint8_t  unusedStateSlave;
         uint16_t checksum;
@@ -65,8 +65,8 @@ typedef enum {
 #elif defined(HARDWARE_MAINBOARD)
     typedef struct __attribute__((packed)){
         uint16_t start;
-        int16_t  speedR;
-        int16_t  speedL;
+        int16_t  speedTargetR;
+        int16_t  speedTargetL;
         uint8_t  enable;
         uint16_t checksum;
     } tx_motor_control_board_t;
