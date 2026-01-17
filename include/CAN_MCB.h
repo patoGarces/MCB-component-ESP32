@@ -6,6 +6,8 @@
 #include "driver/uart.h"
 #include "../../../include/main.h"
 
+// Motor Control Board
+
 #ifdef HARDWARE_SPLITBOARD
     #define MAINBOARD_BAUDRATE          19200
 #else
@@ -15,27 +17,35 @@
 #define START_CODE_HEADER           0xABCD
 #define START_CODE_HEADER_PATTERN   0xCD        // just one byte pattern, litle endian
 
-// MotorControlBoard = MCB
-
 typedef struct {
     gpio_num_t txPin;
     gpio_num_t rxPin;
     uart_port_t numUart;
-    QueueHandle_t queue;
+    QueueHandle_t queueSendControl;
+    QueueHandle_t queueReceiveData;
     uint8_t core;
-}config_init_mcb_t;
+} config_init_mcb_t;
 
-typedef enum {
-    NO_ERROR_MCB,
-    ERROR_MCB_BATTERY,
-    ERROR_MCB_TEMP,
-    ERROR_MCB_HALL_L,
-    ERROR_MCB_HALL_R,
-    ERROR_MCB_INACTIVITY,
-} status_code_mcb_t;
+typedef struct {
+    int16_t motorR;
+    int16_t motorL;
+    uint8_t enable;
+} mcb_motor_control_t;
+
+typedef struct {
+    int16_t     speedR_meas;
+    int16_t     speedL_meas;
+    int32_t     posR;
+    int32_t     posL;
+    int16_t     currentR;
+    int16_t     currentL;
+    int16_t     batVoltage;
+    int16_t     boardTemp;
+    uint8_t     statusCode;     // es drive_controller_status_code_t, pero por defecto ocupa mas de 1 byte un enum en GCC
+    uint8_t     isCharging;
+} mcb_data_received_t;
 
 #ifdef HARDWARE_SPLITBOARD
-
     typedef struct __attribute__((packed)) {
         uint8_t start;
         int16_t  speedTargetR;
@@ -62,7 +72,7 @@ typedef enum {
         // uint8_t     ordenCode;
         // uint8_t     errorCode;
     } rx_motor_control_board_t;
-#elif defined(HARDWARE_MAINBOARD)
+#else
     typedef struct __attribute__((packed)){
         uint16_t start;
         int16_t  speedTargetR;
@@ -83,16 +93,12 @@ typedef enum {
         int16_t     currentL;
         int16_t     batVoltage;
         int16_t     boardTemp;
-        uint8_t     statusCode;     // es status_code_mcb_t, pero por defecto ocupa mas de 1 byte un enum en GCC
+        uint8_t     statusCode;     // es drive_controller_status_code_t, pero por defecto ocupa mas de 1 byte un enum en GCC
         uint8_t     isCharging;
         uint16_t    checksum;
         // uint8_t     ordenCode;
     } rx_motor_control_board_t;
-#else 
-    #error Error hardware mainboard selected
 #endif 
-
-
 
 void mcbInit(config_init_mcb_t *config);
 

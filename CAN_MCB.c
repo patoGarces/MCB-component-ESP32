@@ -1,12 +1,8 @@
 #include "include/CAN_MCB.h"
 #include "string.h"
-#include "../../../include/main.h"              // TODO: mirar este def
 #include "esp_log.h"
 
 #define PATTERN_QUEUE_SIZE  100
-
-extern QueueHandle_t newMcbQueueHandler; 
-extern QueueHandle_t motorControlQueueHandler; 
 
 config_init_mcb_t mcbConfigInit;
 static QueueHandle_t spp_uart_queue;
@@ -52,7 +48,7 @@ static void sendMotorData(int16_t motR,int16_t motL,uint8_t enable) {
     #endif
 
     // ESP_LOGI(TAG,"MotL: %d \t MotR: %d",motL,motR);
-    uart_write_bytes(mcbConfigInit.numUart,&command, sizeof(command));
+    uart_write_bytes(mcbConfigInit.numUart, &command, sizeof(command));
 }
 
 static void processMCBData(uint8_t *data) {
@@ -68,7 +64,7 @@ static void processMCBData(uint8_t *data) {
 
             if (newChecksum == newMcbData.checksum) {
                 // printf("Nuevo paquete OK -> voltage: %d\tposL: %ld\tposR:%ld\n",newMcbData.batVoltage,newMcbData.posL,newMcbData.posR);
-                xQueueSend(newMcbQueueHandler,&newMcbData,0);
+                xQueueSend(mcbConfigInit.queueReceiveData, &newMcbData, 0);
             }
             else {
                 ESP_LOGI(TAG,"Error checksum-> receive: %x, calc: %x",newMcbData.checksum, newChecksum);
@@ -84,8 +80,20 @@ static void processMCBData(uint8_t *data) {
         uint16_t newChecksum = (uint16_t)(newMcbData.start ^ newMcbData.cmd1 ^ newMcbData.cmd2 ^ newMcbData.speedR_meas ^ newMcbData.speedL_meas 
                                          ^ newMcbData.batVoltage ^ newMcbData.boardTemp ^ newMcbData.statusCode ^ newMcbData.isCharging ^ newMcbData.currentR ^ newMcbData.currentL);
             if( newChecksum == newMcbData.checksum){
-                // printf("Nuevo paquete OK -> voltage: %d\tposL: %ld\tposR:%ld\n",newMcbData.batVoltage,newMcbData.posL,newMcbData.posR);
-                xQueueSend(newMcbQueueHandler,&newMcbData,0);
+                mcb_data_received_t mcbDataReceived = (mcb_data_received_t) {
+                    .speedR_meas = newMcbData.speedR_meas ,
+                    .speedL_meas = newMcbData.speedL_meas ,
+                    .posR = newMcbData.posR ,
+                    .posL = newMcbData.posL ,
+                    .currentR = newMcbData.currentR ,
+                    .currentL = newMcbData.currentL ,
+                    .batVoltage = newMcbData.batVoltage ,
+                    .boardTemp = newMcbData.boardTemp ,
+                    .statusCode = newMcbData.start ,
+                    .isCharging = newMcbData.isCharging
+                };
+
+                xQueueSend(mcbConfigInit.queueReceiveData, &mcbDataReceived, 0);
             }
             else {
                 ESP_LOGI(TAG,"Error checksum-> receive: %x, calc: %x",newMcbData.checksum, newChecksum);
@@ -95,12 +103,12 @@ static void processMCBData(uint8_t *data) {
 }
 
 static void controlHandler(void *pvParameters) {
-    output_motors_t newVel;
+    mcb_motor_control_t newVel;
     uart_event_t event;
     uint8_t data[100];
 
     while(true) {
-        if (xQueueReceive(motorControlQueueHandler,&newVel,0)) {
+        if (xQueueReceive(mcbConfigInit.queueSendControl, &newVel, 0)) {
             sendMotorData(newVel.motorR,newVel.motorL,newVel.enable);
         }
 
@@ -170,7 +178,7 @@ static void controlHandler(void *pvParameters) {
                 break;
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(5));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
