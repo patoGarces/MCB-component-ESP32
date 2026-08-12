@@ -17,6 +17,8 @@
 #define START_CODE_HEADER           0xABCD
 #define START_CODE_HEADER_PATTERN   0xCD        // just one byte pattern, litle endian
 
+#define STEPS_PER_REV       90.00                   // 90 steps por vuelta
+
 typedef struct {
     gpio_num_t txPin;
     gpio_num_t rxPin;
